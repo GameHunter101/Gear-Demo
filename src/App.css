@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .root {
+    @apply h-[100vh] w-[500px]
+  }
+}

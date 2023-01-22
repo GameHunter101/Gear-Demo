@@ -1,0 +1,11 @@
+[package]
+name = "gear-calc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+plotlib = "0.5.1"
+plotly = "0.8.3"
+svg = "0.13.0"
