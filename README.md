@@ -3,7 +3,7 @@
 # Rust
 - Generate gears in a wasm module
 # TODO
-- [ ] Generate full gear
+- [x] Generate full gear
 - [ ] Export rust function to wasm
 - [ ] Make react call wasm function
 - [ ] Make gears spin

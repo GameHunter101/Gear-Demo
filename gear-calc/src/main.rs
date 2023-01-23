@@ -7,11 +7,43 @@ const INVOLUTE_RES: usize = 16;
 fn dist(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
     ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()
 }
+
 fn rotate(x: f64, y: f64, theta: f64) -> (f64, f64) {
     // Rotates points x and y around origin by theta degrees
     let x_rot = x * theta.cos() - y * theta.sin();
     let y_rot = y * theta.cos() + x * theta.sin();
     (x_rot, y_rot)
+}
+
+fn calculate_intersect(
+    left_tooth_x: [f64; INVOLUTE_RES],
+    left_tooth_y: [f64; INVOLUTE_RES],
+    p0: usize,
+    p1: usize,
+    outer_diameter: f64,
+) -> (f64, f64) {
+    // Calculate the intersection point between the last segment of the involute and the outer circle
+    // Accepts the index of the last point within the outer circle and the index of the first point outside of the outer circle
+    let x_0 = left_tooth_x[p0];
+    let y_0 = left_tooth_y[p0];
+    let x_1 = left_tooth_x[p1];
+    let y_1 = left_tooth_y[p1];
+    // println!("{:?},{:?}, {outer_diameter}",(x_0,y_0),(x_1,y_1));
+    // Make line connecting both points: y=mx+k
+    let m = (y_1 - y_0) / (x_1 - x_0);
+    let k = y_0 - m * x_0;
+    // Make quadratic equation by substituting the previous equation as y in x^2+y^2 =r^2: x^2+(mx+k)^2=r^2
+    let a = m.powi(2) + 1.0;
+    let b = 2.0 * k * m;
+    let c = k.powi(2) - (outer_diameter / 2.0).powi(2);
+    // Solve quadratic equation for x
+    let disc = (b.powi(2) - (4.0 * a * c)).sqrt();
+    let pos_x = (-1.0 * b) / (2.0 * a) + disc / (2.0 * a);
+    let neg_x = (-1.0 * b) / (2.0 * a) - disc / (2.0 * a);
+    // Select intersection point closest to the points because the quadratic will return two values
+    let intersect_x = if x_0 > 0.0 { pos_x } else { neg_x };
+    let intersect_y = m * intersect_x + k;
+    (intersect_x, intersect_y)
 }
 
 fn make_gear(num_teeth: usize, pitch_diameter: f64) -> (Vec<(f64, f64)>, f64, f64, f64, f64) {
@@ -37,10 +69,9 @@ fn make_gear(num_teeth: usize, pitch_diameter: f64) -> (Vec<(f64, f64)>, f64, f6
             base_diameter,
             beta_angle,
             outer_diameter,
+            root_diameter,
             num_teeth,
-            tooth_pitch,
-            pitch_diameter,
-            i as f64,
+            i,
         );
         // Rotates teeth if needed
         let theta = -1.0 * (i as f64) * ((2.0 * PI) / (num_teeth as f64));
@@ -62,10 +93,9 @@ fn make_tooth(
     base_diameter: f64,
     beta: f64,
     outer_diameter: f64,
+    root_diameter: f64,
     num_teeth: usize,
-    tooth_pitch: f64,
-    pitch_diameter: f64,
-    rotation_fac: f64,
+    instance_num: usize,
 ) -> Vec<(f64, f64)> {
     // Instead of generating one tooth and figuring out how much space to put on each side, generate one half of two adjacent teeth (left tooth and right tooth)
     // Generates right half of the left tooth and then the left half of the right tooth. The right tooth is generated while accounting for space in between teeth
@@ -106,7 +136,7 @@ fn make_tooth(
     // The point that contains the last part of the curve fall outside of the outside circle, causing the involute to end abruptly
     // This interpolates a point that the involute would intersect with the outside circle
     let mut first_out_bounds = last_in_bounds - 1;
-    let top_fill= calculate_intersect(
+    let top_fill = calculate_intersect(
         left_tooth_x,
         left_tooth_y,
         last_in_bounds,
@@ -116,7 +146,19 @@ fn make_tooth(
     // The loop is reversed so that the svg draws a line at the bottom of the curves
     all_points.push(top_fill);
     all_points.reverse();
+    if root_diameter < base_diameter {
+        all_points.push((
+            (root_diameter / 2.0) * (0.0 * -2.0 * PI / num_teeth as f64).cos(),
+            (root_diameter / 2.0) * (0.0 * -2.0 * PI / num_teeth as f64).sin(),
+        ));
+    }
     // Append right tooth points
+    if root_diameter < base_diameter {
+        all_points.push((
+            (root_diameter / 2.0) * (-1.0 * beta).cos(),
+            (root_diameter / 2.0) * (-1.0 * beta).sin(),
+        ));
+    }
     for i in 0..INVOLUTE_RES {
         let x = right_tooth_x[i];
         let y = right_tooth_y[i];
@@ -137,41 +179,10 @@ fn make_tooth(
     all_points
 }
 
-fn calculate_intersect(
-    left_tooth_x: [f64; INVOLUTE_RES],
-    left_tooth_y: [f64; INVOLUTE_RES],
-    p0: usize,
-    p1: usize,
-    outer_diameter: f64,
-) -> (f64, f64) {
-    // Calculate the intersection point between the last segment of the involute and the outer circle
-    // Accepts the index of the last point within the outer circle and the index of the first point outside of the outer circle
-    let x_0 = left_tooth_x[p0];
-    let y_0 = left_tooth_y[p0];
-    let x_1 = left_tooth_x[p1];
-    let y_1 = left_tooth_y[p1];
-    // println!("{:?},{:?}, {outer_diameter}",(x_0,y_0),(x_1,y_1));
-    // Make line connecting both points: y=mx+k
-    let m = (y_1 - y_0) / (x_1 - x_0);
-    let k = y_0 - m * x_0;
-    // Make quadratic equation by substituting the previous equation as y in x^2+y^2 =r^2: x^2+(mx+k)^2=r^2
-    let a = m.powi(2) + 1.0;
-    let b = 2.0 * k * m;
-    let c = k.powi(2) - (outer_diameter / 2.0).powi(2);
-    // Solve quadratic equation for x
-    let disc = (b.powi(2) - (4.0 * a * c)).sqrt();
-    let pos_x = (-1.0*b) / (2.0 * a) + disc / (2.0 * a);
-    let neg_x = (-1.0*b) / (2.0 * a) - disc / (2.0 * a);
-    // Select intersection point closest to the points because the quadratic will return two values
-    let intersect_x = if x_0 > 0.0 { pos_x } else { neg_x };
-    let intersect_y = m * intersect_x + k;
-    (intersect_x, intersect_y)
-}
-
 fn plot_gear(all_data: (Vec<(f64, f64)>, f64, f64, f64, f64), /* tcx: Vec<f64>, tcy: Vec<f64> */) {
-    let y_translate = 20.0;
+    let y_translate = 10.0;
     let x_translate = 5.0;
-    let scale = 5.0;
+    let scale = 10.0;
     let teeth_data = &all_data.0;
     let root_circle_radius = all_data.1;
     let base_circle_radius = all_data.2;
@@ -231,7 +242,7 @@ fn plot_gear(all_data: (Vec<(f64, f64)>, f64, f64, f64, f64), /* tcx: Vec<f64>, 
     let mut document = svg::Document::new();
     document = document
         .add(teeth_path)
-        .add(root_circle)
+        // .add(root_circle)
         .add(base_circle)
         .add(pitch_circle)
         .add(outer_circle)
