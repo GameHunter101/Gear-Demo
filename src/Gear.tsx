@@ -1,4 +1,6 @@
+import React, {useEffect, useState} from "react";
 import { ReactSVG } from "react-svg";
+import init, {make_gear} from "gear-calc";
 
 interface GearProps {
 	teeth: number,
@@ -7,8 +9,20 @@ interface GearProps {
 }
 
 const Gear = (props: GearProps) => {
+	const [points, setPoints] = useState(null);
+	useEffect(()=>{
+		init().then(()=>{
+			console.log(make_gear(9,20));
+		})
+	})
+	let d = "M"
 	return (
-		<div style={{ translate: props.position.x + props.radius + "px " + props.position.y + "px" }}>
+		<>
+		<svg
+		viewBox="0 0 500 500" xmlns="<http://www.w3.org/2000/svg>">
+			<path strokeWidth={"2"} stroke={"red"} d=""></path>
+		</svg>
+		{/* <div style={{ translate: props.position.x + props.radius + "px " + props.position.y + "px" }}>
 			<div className="absolute translate-y-[-28.25px]">
 				{
 					(new Array(props.teeth).fill("")).map((_e, i) => {
@@ -21,7 +35,8 @@ const Gear = (props: GearProps) => {
 				}
 			</div>
 			<div className={`bg-black rounded-full absolute`} style={{ width: props.radius + "px", height: props.radius + "px"}}></div>
-		</div>
+		</div> */}
+		</>
 	);
 };
 

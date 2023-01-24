@@ -1,18 +1,66 @@
 use std::f64::consts::PI;
 use svg::node::element::path::Data;
-use svg::node::element::{Circle, Line, Path};
-use svg::Document;
+use svg::node::element::{Circle, Path};
+use wasm_bindgen::prelude::*;
+use serde::{Serialize,Deserialize};
+
 const INVOLUTE_RES: usize = 16;
 
-fn dist(x1: f64, y1: f64, x2: f64, y2: f64) -> f64 {
-    ((x2 - x1).powi(2) + (y2 - y1).powi(2)).sqrt()
+#[wasm_bindgen]
+#[derive(Serialize,Deserialize,Clone, Copy)]
+pub struct Point (pub f64,pub f64);
+
+#[wasm_bindgen]
+#[derive(Serialize,Deserialize)]
+pub struct Points {
+    points: Vec<Point>,
+    index: usize
 }
 
-fn rotate(x: f64, y: f64, theta: f64) -> (f64, f64) {
+impl Points {
+    fn new(points: Vec<Point>)->Self {
+        Points { points, index: 0 }
+    }
+    fn push(&mut self, point:Point) {
+        self.points.push(point);
+    }
+}
+
+impl Iterator for Points {
+    type Item = Point;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.points.len() {
+            let result = self.points[self.index];
+            self.index +=1;
+            Some(result)
+        } else {
+            None
+        }
+    }
+}
+
+fn gen_circle(
+    x_translate: f64,
+    scale: f64,
+    y_translate: f64,
+    base_circle_radius: f64,
+    color: &str,
+) -> Circle {
+    let circle = Circle::new()
+        .set("cx", x_translate * scale)
+        .set("cy", y_translate * scale)
+        .set("r", base_circle_radius * scale)
+        .set("stroke", color)
+        .set("stroke-width", "0.1")
+        .set("fill", "none");
+    circle
+}
+
+fn rotate(x: f64, y: f64, theta: f64) -> Point {
     // Rotates points x and y around origin by theta degrees
     let x_rot = x * theta.cos() - y * theta.sin();
     let y_rot = y * theta.cos() + x * theta.sin();
-    (x_rot, y_rot)
+    Point(x_rot, y_rot)
 }
 
 fn calculate_intersect(
@@ -21,7 +69,7 @@ fn calculate_intersect(
     p0: usize,
     p1: usize,
     outer_diameter: f64,
-) -> (f64, f64) {
+) -> Point {
     // Calculate the intersection point between the last segment of the involute and the outer circle
     // Accepts the index of the last point within the outer circle and the index of the first point outside of the outer circle
     let x_0 = left_tooth_x[p0];
@@ -43,15 +91,15 @@ fn calculate_intersect(
     // Select intersection point closest to the points because the quadratic will return two values
     let intersect_x = if x_0 > 0.0 { pos_x } else { neg_x };
     let intersect_y = m * intersect_x + k;
-    (intersect_x, intersect_y)
+    Point(intersect_x, intersect_y)
 }
 
-fn make_gear(num_teeth: usize, pitch_diameter: f64) -> (Vec<(f64, f64)>, f64, f64, f64, f64) {
+#[wasm_bindgen]
+pub fn make_gear(num_teeth: usize, pitch_diameter: f64) -> JsValue {
     // User specifies tooth count, and pitch diameter
     // Calculate important measurements: pitch, tooth thickness, module, addendum, dedendum, root diameter, outer diameter, base diameter, alpha angle, beta angle
     let pressure_angle = 20.0_f64.to_radians();
     let tooth_pitch = (PI * pitch_diameter) / num_teeth as f64;
-    let tooth_thickness = tooth_pitch / 2.0;
     let module = tooth_pitch / PI;
     let addendum = module;
     let dedendum = 1.25 * module;
@@ -63,16 +111,15 @@ fn make_gear(num_teeth: usize, pitch_diameter: f64) -> (Vec<(f64, f64)>, f64, f6
     let beta_angle = 2.0 * ((2.0 * PI) / (4.0 * (num_teeth as f64)) - alpha_angle);
 
     // Generate points for all teeth
-    let mut profile_points: Vec<(f64, f64)> = vec![];
+    let mut profile_points:Points = Points::new(vec![]);
     for i in 0..num_teeth {
-        let mut tooth = make_tooth(
+        let mut tooth:Points = serde_wasm_bindgen::from_value(make_tooth(
             base_diameter,
             beta_angle,
             outer_diameter,
             root_diameter,
-            num_teeth,
-            i,
-        );
+            num_teeth
+        )).unwrap();
         // Rotates teeth if needed
         let theta = -1.0 * (i as f64) * ((2.0 * PI) / (num_teeth as f64));
         for point in &mut tooth {
@@ -80,23 +127,17 @@ fn make_gear(num_teeth: usize, pitch_diameter: f64) -> (Vec<(f64, f64)>, f64, f6
             profile_points.push(rotated);
         }
     }
-    (
-        profile_points,
-        root_diameter / 2.0,
-        base_diameter / 2.0,
-        pitch_diameter / 2.0,
-        outer_diameter / 2.0,
-    )
+    JsValue::from(profile_points)
 }
 
-fn make_tooth(
+#[wasm_bindgen]
+pub fn make_tooth(
     base_diameter: f64,
     beta: f64,
     outer_diameter: f64,
     root_diameter: f64,
-    num_teeth: usize,
-    instance_num: usize,
-) -> Vec<(f64, f64)> {
+    num_teeth: usize
+) -> JsValue {
     // Instead of generating one tooth and figuring out how much space to put on each side, generate one half of two adjacent teeth (left tooth and right tooth)
     // Generates right half of the left tooth and then the left half of the right tooth. The right tooth is generated while accounting for space in between teeth
 
@@ -119,7 +160,7 @@ fn make_tooth(
     }
 
     // Combine all previous arrays in a vector because some points would fall outside the outer circle
-    let mut all_points: Vec<(f64, f64)> = vec![];
+    let mut all_points: Points = Points::new(vec![]);
 
     // Append left tooth points
     let mut last_in_bounds = 0;
@@ -128,7 +169,7 @@ fn make_tooth(
         let y = left_tooth_y[i];
         let distance = (x.powi(2) + y.powi(2)).sqrt();
         if distance <= outer_diameter / 2.0 {
-            all_points.push((x, y));
+            all_points.push(Point(x, y));
             last_in_bounds = i;
         }
     }
@@ -144,17 +185,17 @@ fn make_tooth(
         outer_diameter,
     );
     // The loop is reversed so that the svg draws a line at the bottom of the curves
-    all_points.push(top_fill);
-    all_points.reverse();
+    all_points.points.push(top_fill);
+    all_points.points.reverse();
     if root_diameter < base_diameter {
-        all_points.push((
+        all_points.push(Point(
             (root_diameter / 2.0) * (0.0 * -2.0 * PI / num_teeth as f64).cos(),
             (root_diameter / 2.0) * (0.0 * -2.0 * PI / num_teeth as f64).sin(),
         ));
     }
     // Append right tooth points
     if root_diameter < base_diameter {
-        all_points.push((
+        all_points.push(Point(
             (root_diameter / 2.0) * (-1.0 * beta).cos(),
             (root_diameter / 2.0) * (-1.0 * beta).sin(),
         ));
@@ -164,7 +205,7 @@ fn make_tooth(
         let y = right_tooth_y[i];
         let distance = (x.powi(2) + y.powi(2)).sqrt();
         if distance <= outer_diameter / 2.0 {
-            all_points.push((x, y));
+            all_points.push(Point(x, y));
             last_in_bounds = i;
         }
     }
@@ -176,15 +217,17 @@ fn make_tooth(
         first_out_bounds,
         outer_diameter,
     ));
-    all_points
+    JsValue::from(all_points)
 }
 
-fn plot_gear(all_data: (Vec<(f64, f64)>, f64, f64, f64, f64), /* tcx: Vec<f64>, tcy: Vec<f64> */) {
+// Function obsolete because it was only used in debugging
+
+/* fn plot_gear(all_data: (Vec<(f64, f64)>, f64, f64, f64, f64), /* tcx: Vec<f64>, tcy: Vec<f64> */) {
     let y_translate = 10.0;
     let x_translate = 5.0;
     let scale = 10.0;
     let teeth_data = &all_data.0;
-    let root_circle_radius = all_data.1;
+    // let root_circle_radius = all_data.1;
     let base_circle_radius = all_data.2;
     let pitch_circle_radius = all_data.3;
     let outer_circle_radius = all_data.4;
@@ -198,62 +241,19 @@ fn plot_gear(all_data: (Vec<(f64, f64)>, f64, f64, f64, f64), /* tcx: Vec<f64>, 
             (point.1 + y_translate) * scale,
         ));
     }
-    // path_data = path_data.close();
     let teeth_path = Path::new()
         .set("fill", "none")
         .set("stroke", "black")
         .set("stroke-width", 0.2)
         .set("d", teeth_path_data);
-    let root_circle = Circle::new()
-        .set("cx", x_translate * scale)
-        .set("cy", y_translate * scale)
-        .set("r", root_circle_radius * scale)
-        .set("stroke", "black")
-        .set("stroke-width", 0.2)
-        .set("fill", "none");
-    let base_circle = Circle::new()
-        .set("cx", x_translate * scale)
-        .set("cy", y_translate * scale)
-        .set("r", base_circle_radius * scale)
-        .set("stroke", "green")
-        .set("stroke-width", "0.1")
-        .set("fill", "none");
-    let pitch_circle = Circle::new()
-        .set("cx", x_translate * scale)
-        .set("cy", y_translate * scale)
-        .set("r", pitch_circle_radius * scale)
-        .set("stroke", "red")
-        .set("stroke-width", "0.1")
-        .set("fill", "none");
-    let outer_circle = Circle::new()
-        .set("cx", x_translate * scale)
-        .set("cy", y_translate * scale)
-        .set("r", outer_circle_radius * scale)
-        .set("stroke", "blue")
-        .set("stroke-width", "0.1")
-        .set("fill", "none");
-    let x_axis = Line::new()
-        .set("x1", 0)
-        .set("y1", y_translate * scale)
-        .set("x2", 200)
-        .set("y2", y_translate * scale)
-        .set("stroke", "black")
-        .set("stroke-width", 0.3);
     let mut document = svg::Document::new();
     document = document
         .add(teeth_path)
-        // .add(root_circle)
-        .add(base_circle)
-        .add(pitch_circle)
-        .add(outer_circle)
-        // .add(x_axis)
+        // .add(gen_circle(x_translate, scale, y_translate, root_circle_radius, "black"))
+        /* .add(gen_circle(x_translate, scale, y_translate, base_circle_radius, "green"))
+        .add(gen_circle(x_translate, scale, y_translate, pitch_circle_radius, "red"))
+        .add(gen_circle(x_translate, scale, y_translate, outer_circle_radius, "blue")) */
         .set("viewBox", (0, 0, 200, 200));
-    // println!("{}", document.to_string());
 
     svg::save("image.svg", &document).unwrap();
-}
-
-fn main() {
-    let gear = make_gear(18, 9.0);
-    plot_gear(gear);
-}
+} */

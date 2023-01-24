@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:wasm": "cd gear-calc && wasm-pack build --target web --out-dir pkg",
     "preview": "vite preview"
   },
   "dependencies": {
+    "gear-calc": "file:./gear-calc/pkg",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-svg": "^15.1.21"

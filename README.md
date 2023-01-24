@@ -4,6 +4,6 @@
 - Generate gears in a wasm module
 # TODO
 - [x] Generate full gear
-- [ ] Export rust function to wasm
+- [x] Export rust function to wasm
 - [ ] Make react call wasm function
 - [ ] Make gears spin
