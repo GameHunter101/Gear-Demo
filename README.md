@@ -1,9 +1,13 @@
-# React
+# Gear Demo 🦀🕸
+
+## Goal
+- Program that demos how gears mesh with eachother. Gears would be generated in web assembly (wasm) using parameters the user inputs
+## React
 - Make gears by calling wasm function
-# Rust
+## Rust
 - Generate gears in a wasm module
-# TODO
+## TODO
 - [x] Generate full gear
 - [x] Export rust function to wasm
-- [ ] Make react call wasm function
+- [x] Make react call wasm function
 - [ ] Make gears spin

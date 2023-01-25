@@ -1,27 +1,27 @@
 use std::f64::consts::PI;
-use svg::node::element::path::Data;
-use svg::node::element::{Circle, Path};
+// use svg::node::element::path::Data;
+// use svg::node::element::{Circle, Path};
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use serde::{Serialize,Deserialize};
 
 const INVOLUTE_RES: usize = 16;
 
 #[wasm_bindgen]
-#[derive(Serialize,Deserialize,Clone, Copy)]
-pub struct Point (pub f64,pub f64);
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct Point(pub f64, pub f64);
 
 #[wasm_bindgen]
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Points {
     points: Vec<Point>,
-    index: usize
+    index: usize,
 }
 
 impl Points {
-    fn new(points: Vec<Point>)->Self {
+    fn new(points: Vec<Point>) -> Self {
         Points { points, index: 0 }
     }
-    fn push(&mut self, point:Point) {
+    fn push(&mut self, point: Point) {
         self.points.push(point);
     }
 }
@@ -31,7 +31,7 @@ impl Iterator for Points {
     fn next(&mut self) -> Option<Self::Item> {
         if self.index < self.points.len() {
             let result = self.points[self.index];
-            self.index +=1;
+            self.index += 1;
             Some(result)
         } else {
             None
@@ -39,7 +39,7 @@ impl Iterator for Points {
     }
 }
 
-fn gen_circle(
+/* fn gen_circle(
     x_translate: f64,
     scale: f64,
     y_translate: f64,
@@ -54,7 +54,7 @@ fn gen_circle(
         .set("stroke-width", "0.1")
         .set("fill", "none");
     circle
-}
+} */
 
 fn rotate(x: f64, y: f64, theta: f64) -> Point {
     // Rotates points x and y around origin by theta degrees
@@ -94,8 +94,17 @@ fn calculate_intersect(
     Point(intersect_x, intersect_y)
 }
 
+fn bruh() -> String {
+    "bruh".to_string()
+}
+
 #[wasm_bindgen]
-pub fn make_gear(num_teeth: usize, pitch_diameter: f64) -> JsValue {
+pub fn test(num: f64) -> String {
+    format!("things: {}, {}", num,bruh())
+}
+
+#[wasm_bindgen]
+pub fn make_gear(num_teeth: usize, pitch_diameter: f64) -> String {
     // User specifies tooth count, and pitch diameter
     // Calculate important measurements: pitch, tooth thickness, module, addendum, dedendum, root diameter, outer diameter, base diameter, alpha angle, beta angle
     let pressure_angle = 20.0_f64.to_radians();
@@ -111,33 +120,41 @@ pub fn make_gear(num_teeth: usize, pitch_diameter: f64) -> JsValue {
     let beta_angle = 2.0 * ((2.0 * PI) / (4.0 * (num_teeth as f64)) - alpha_angle);
 
     // Generate points for all teeth
-    let mut profile_points:Points = Points::new(vec![]);
+    let mut profile_points: Points = Points::new(vec![]);
     for i in 0..num_teeth {
-        let mut tooth:Points = serde_wasm_bindgen::from_value(make_tooth(
+        let mut tooth: Points = make_tooth(
             base_diameter,
             beta_angle,
             outer_diameter,
             root_diameter,
-            num_teeth
-        )).unwrap();
+            num_teeth,
+        );
         // Rotates teeth if needed
         let theta = -1.0 * (i as f64) * ((2.0 * PI) / (num_teeth as f64));
         for point in &mut tooth {
             let rotated = rotate(point.0, point.1, theta);
-            profile_points.push(rotated);
+            profile_points.push(Point(rotated.0+outer_diameter/2.0, rotated.1+outer_diameter/2.0));
         }
     }
-    JsValue::from(profile_points)
+    let mut string = format!(
+        "M{},{}",
+        profile_points.points[0].0, profile_points.points[0].1
+    );
+    for point in profile_points {
+        string += &format!(" L{},{}", point.0, point.1);
+    }
+    string += " z";
+    string
+    // JsValue::from(profile_points)
 }
 
-#[wasm_bindgen]
 pub fn make_tooth(
     base_diameter: f64,
     beta: f64,
     outer_diameter: f64,
     root_diameter: f64,
-    num_teeth: usize
-) -> JsValue {
+    num_teeth: usize,
+) -> Points {
     // Instead of generating one tooth and figuring out how much space to put on each side, generate one half of two adjacent teeth (left tooth and right tooth)
     // Generates right half of the left tooth and then the left half of the right tooth. The right tooth is generated while accounting for space in between teeth
 
@@ -217,7 +234,7 @@ pub fn make_tooth(
         first_out_bounds,
         outer_diameter,
     ));
-    JsValue::from(all_points)
+    all_points
 }
 
 // Function obsolete because it was only used in debugging

@@ -7,7 +7,8 @@ function App() {
 
 	return (
 		<div className="App relative">
-			<Gear teeth={10} position={{x:50,y:50}} radius={10}/>
+
+			<Gear teeth={30} diameter={10} position={{ x: 50, y: 50 }}/>
 		</div>
 	)
 }
