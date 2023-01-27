@@ -64,8 +64,8 @@ fn rotate(x: f64, y: f64, theta: f64) -> Point {
 }
 
 fn calculate_intersect(
-    left_tooth_x: [f64; INVOLUTE_RES],
-    left_tooth_y: [f64; INVOLUTE_RES],
+    left_tooth_x: [f64; INVOLUTE_RES+1],
+    left_tooth_y: [f64; INVOLUTE_RES+1],
     p0: usize,
     p1: usize,
     outer_diameter: f64,
@@ -159,14 +159,15 @@ pub fn make_tooth(
     // Generates right half of the left tooth and then the left half of the right tooth. The right tooth is generated while accounting for space in between teeth
 
     // Points of left tooth
-    let mut left_tooth_x = [0.0; INVOLUTE_RES];
-    let mut left_tooth_y = [0.0; INVOLUTE_RES];
+    let mut left_tooth_x = [0.0; INVOLUTE_RES+1];
+    let mut left_tooth_y = [0.0; INVOLUTE_RES+1];
     // Lower points of the tooth
-    let mut right_tooth_x = [0.0; INVOLUTE_RES];
-    let mut right_tooth_y = [0.0; INVOLUTE_RES];
+    let mut right_tooth_x = [0.0; INVOLUTE_RES+1];
+    let mut right_tooth_y = [0.0; INVOLUTE_RES+1];
 
-    for i in 0..INVOLUTE_RES {
-        let t = (i as f64) / (3.0 * PI);
+    for i in 0..=INVOLUTE_RES {
+        let t = ((i as f64)/INVOLUTE_RES as f64)*0.9;
+        // println!("{}",t);
         let r = base_diameter / 2.0;
         // Calculate involute curve for left tooth
         left_tooth_x[i] = r * (t.cos() + t * t.sin());
@@ -239,37 +240,15 @@ pub fn make_tooth(
 
 // Function obsolete because it was only used in debugging
 
-/* fn plot_gear(all_data: (Vec<(f64, f64)>, f64, f64, f64, f64), /* tcx: Vec<f64>, tcy: Vec<f64> */) {
-    let y_translate = 10.0;
-    let x_translate = 5.0;
-    let scale = 10.0;
-    let teeth_data = &all_data.0;
-    // let root_circle_radius = all_data.1;
-    let base_circle_radius = all_data.2;
-    let pitch_circle_radius = all_data.3;
-    let outer_circle_radius = all_data.4;
-    let mut teeth_path_data = Data::new().move_to((
-        (teeth_data[0].0 + x_translate) * scale,
-        (teeth_data[0].1 + y_translate) * scale,
-    ));
-    for point in teeth_data.iter() {
-        teeth_path_data = teeth_path_data.line_to((
-            (point.0 + x_translate) * scale,
-            (point.1 + y_translate) * scale,
-        ));
-    }
+/* fn plot_gear(all_data: String, /* tcx: Vec<f64>, tcy: Vec<f64> */) {
     let teeth_path = Path::new()
         .set("fill", "none")
         .set("stroke", "black")
         .set("stroke-width", 0.2)
-        .set("d", teeth_path_data);
+        .set("d", all_data);
     let mut document = svg::Document::new();
     document = document
         .add(teeth_path)
-        // .add(gen_circle(x_translate, scale, y_translate, root_circle_radius, "black"))
-        /* .add(gen_circle(x_translate, scale, y_translate, base_circle_radius, "green"))
-        .add(gen_circle(x_translate, scale, y_translate, pitch_circle_radius, "red"))
-        .add(gen_circle(x_translate, scale, y_translate, outer_circle_radius, "blue")) */
         .set("viewBox", (0, 0, 200, 200));
 
     svg::save("image.svg", &document).unwrap();

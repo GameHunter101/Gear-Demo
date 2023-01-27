@@ -6,4 +6,14 @@
   html {
     @apply h-[100vh] w-[100vw]
   }
+  .relative {
+    @apply h-[100vh]
+  }
+}
+
+@layer base {
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    @apply appearance-none m-0
+  }
 }
