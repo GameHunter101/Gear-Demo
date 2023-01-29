@@ -1,11 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, RefObject } from 'react'
 import './App.css'
 import Gear from './Gear'
 
 function App() {
-	const [gears, setGears] = useState<{ teeth: number, diameter: number }[]>([{teeth:5, diameter:5}]);
+	const [gears, setGears] = useState<{ teeth: number, diameter: number }[]>([{ teeth: 5, diameter: 5 }]);
 	const [teethCount, setTeethCount] = useState(18);
 	const [pitchDiameter, setPitchDiameter] = useState(20);
+	const [selected, setSelected] = useState<number>();
+
+	const svgRef = useRef<SVGSVGElement>(null);
+
+	const handleClick = (e: MouseEvent) => {
+		if (e.target instanceof SVGPathElement) {
+			const index = Array.from(svgRef.current!.children).indexOf(e.target);
+			setSelected(index);
+			// svgRef.current?.children[selected].setAttribute("fill", "#f00");
+		} else {
+			setSelected(undefined);
+		}
+	}
+
+	useEffect(() => {
+		window.addEventListener("click", handleClick);
+
+		gears.map((_e, i) => {
+			svgRef.current!.children.item(i)?.setAttribute("fill-opacity", "0");
+		})
+		if (selected != undefined) {
+			svgRef.current!.children.item(selected)?.setAttribute("fill-opacity", ".3");
+		}
+
+
+		return () => {
+			window.removeEventListener("click", handleClick);
+		}
+	}, [selected])
+
 
 	return (
 		<div className="App relative">
@@ -27,16 +57,22 @@ function App() {
 					</span>
 				</form>
 			</div>
-
 			<svg
 				xmlns="<http://www.w3.org/2000/svg>"
 				className="overflow-visible w-fit h-fit rounded-full pointer-events-none"
 				width={"100vw"}
 				height={"100vh"}
+				ref={svgRef}
 			>
 
 				{gears.map((gear, i) => {
-					return <Gear teeth={gear.teeth} diameter={gear.diameter} position={{ x: 50, y: 50 }} key={i} />
+					return <Gear teeth={gear.teeth} diameter={gear.diameter} id={i} key={i} select={(id) => {
+						setSelected(id);
+						// console.log(selected);
+						// setSelected(svgRef.current!.children[id]);
+						// svgRef.current!.children[id].;
+						// gear.current!.setAttribute("fill","#f00");
+					}} />
 				})}
 			</svg>
 		</div>

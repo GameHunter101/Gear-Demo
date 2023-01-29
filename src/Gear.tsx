@@ -1,19 +1,20 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { ForwardedRef, RefObject, useEffect, useRef, useState } from "react";
 import { ReactSVG } from "react-svg";
 // import init, {make_gear} from "gear-calc";
 import init, { make_gear, test } from "gear-calc";
-import Draggable, { DraggableCore } from "react-draggable";
+import Draggable from "react-draggable";
 
 interface GearProps {
 	teeth: number,
 	diameter: number,
-	position: { x: number, y: number }
+	id: number,
+	select: (id:number)=>void
 }
 
 const Gear = (props: GearProps) => {
 	const [points, setPoints] = useState("");
 
-	const pathRef = useRef(null);
+	const ref = useRef<SVGPathElement>(null);
 
 	const pixelToCm = 0.026458;
 	init().then(() => {
@@ -22,15 +23,17 @@ const Gear = (props: GearProps) => {
 	return (
 		<>
 
-			<Draggable nodeRef={pathRef}>
+			<Draggable nodeRef={ref as any}>
 				<path
 					strokeWidth={"1"}
 					stroke="black"
-					fill="#00000000"
+					fill="#000"
+					fillOpacity={0}
 					d={points}
 					className="pointer-events-auto"
 					// transform={`translate(${offsetX + " " + offsetY})`}
-					ref={pathRef}
+					ref={ref}
+					onClick={()=>props.select(props.id)}
 				>
 				</path>
 			</Draggable>
