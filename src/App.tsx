@@ -3,13 +3,13 @@ import "./App.css";
 import Gear, { RefType } from "./Gear";
 
 function App() {
-	const [gears, setGears] = useState<{ teeth: number, diameter: number, num: number }[]>([{ teeth: 5, diameter: 5, num: 0 }]);
+	const [gears, setGears] = useState<{ teeth: number, diameter: number, num: number }[]>([{ teeth: 10, diameter: 5, num: 0 }]);
 	const [teethCount, setTeethCount] = useState(18);
 	const [pitchDiameter, setPitchDiameter] = useState(20);
 	const [rpm, setRpm] = useState(60);
 	const [selected, setSelected] = useState<number>();
 
-	const gearRefs = useRef<(RefType|null)[]>([]);
+	const gearRefs = useRef<(RefType | null)[]>([]);
 
 	const svgRef = useRef<SVGSVGElement>(null);
 
@@ -42,7 +42,7 @@ function App() {
 	}, [selected])
 
 	const gearComponents = gears.map((gear, i) => (
-		<Gear teeth={gear.teeth} diameter={gear.diameter} id={i} key={i} num={gear.num} ref={e=>gearRefs.current.push(e)} select={(id) => {
+		<Gear teeth={gear.teeth} diameter={gear.diameter} id={i} key={i} num={gear.num} ref={e => gearRefs.current[i]=e} select={(id) => {
 			setSelected(id);
 		}} />
 	));
@@ -69,22 +69,36 @@ function App() {
 						</span>
 					</form>
 					:
-					<p></p>
+					<form className="mx-auto grid grid-cols-3 gap-2" onSubmit={(e) => {
+						e.preventDefault();
+						if (gears && selected != undefined && !isNaN(rpm)) {
+							gearRefs.current[selected]?.setSpeed(60 / rpm);
+						}
+					}}>
+						<div>
+							<label htmlFor="rpm" className="pr-2 text-white">Gear RPM</label>
+							<input type="number" id="rpm" value={rpm} className="w-12 bg-transparent focus:outline-none placeholder:text-gray-300 text-gray-300 border-b-[1px]  border-b-gray-700" onChange={e => setRpm(e.target.valueAsNumber)} />
+						</div>
+						<span className="mx-2">
+							<button type="submit" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100">Set RPM</button>
+						</span>
+						<span className="mx-2">
+							<button type="button" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100" onClick={() => {
+								let test:any = [];
+								gears.map((e, i) => {
+									if (i != selected) {
+										test.push(e);
+									}
+								});
+								setGears(test);
+								gearRefs.current.splice(selected, 1);
+								gearComponents.splice(selected, 1);
+							}}>
+								Delete Gear
+							</button>
+						</span>
+					</form>
 				}
-				<form className="mx-auto grid grid-cols-3 gap-2" onSubmit={(e) => {
-					e.preventDefault();
-					if (gears && selected != undefined) {
-						gearRefs.current[selected]?.retrieveSpeed(60/rpm);
-					}
-				}}>
-					<div>
-						<label htmlFor="rpm" className="pr-2 text-white">Gear RPM</label>
-						<input type="number" id="rpm" value={rpm} className="w-12 bg-transparent focus:outline-none placeholder:text-gray-300 text-gray-300 border-b-[1px]  border-b-gray-700" onChange={e => setRpm(e.target.valueAsNumber)} />
-					</div>
-					<span className="mx-2">
-						<button type="submit" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100">Set RPM</button>
-					</span>
-				</form>
 			</div>
 			<svg
 				xmlns="<http://www.w3.org/2000/svg>"

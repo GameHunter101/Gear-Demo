@@ -13,26 +13,31 @@ interface GearProps {
 }
 
 export interface RefType {
-	retrieveSpeed: (num:number)=>void
+	setSpeed: (num: number) => void
 }
 
-const Gear = forwardRef<RefType,GearProps>((props: GearProps, ref) => {
+const Gear = forwardRef<RefType, GearProps>((props: GearProps, ref) => {
 	const [points, setPoints] = useState("");
-	const [speed,setSpeed] = useState(10);
+	const [speed, setAnimationSpeed] = useState(0);
 
 	const pathRef = useRef<SVGPathElement>(null);
-
+	if (pathRef.current && props.id % 2 == 1) {
+		pathRef.current.style.animationDirection = "reverse";
+	}
 	useEffect(() => {
-		console.log(speed);
+		console.log(props.id);
+		if (speed === Infinity) {
+			setAnimationSpeed(0);
+		}
 		// pathRef.current?.classList.add("animate-[spin_5s_linear_infinite]")
-	
+
 	}, [speed]);
 
-	const retrieveSpeed = (num:number)=>{
-		setSpeed(num);
+	const setSpeed = (num: number) => {
+		setAnimationSpeed(num);
 	};
-	
-	useImperativeHandle(ref,()=>({retrieveSpeed}))
+
+	useImperativeHandle(ref, () => ({ setSpeed }))
 
 	// if (ref.current) {
 	// 	console.log(ref.current["offsetWidth" as never]);
@@ -41,7 +46,6 @@ const Gear = forwardRef<RefType,GearProps>((props: GearProps, ref) => {
 	init().then(() => {
 		setPoints(make_gear(props.teeth, props.diameter / pixelToCm));
 	});
-	const className = `pointer-events-auto origin-center animate-[spin_${speed}s_linear_infinite]`;
 	return (
 		<>
 			<Draggable nodeRef={pathRef as any}>
@@ -57,8 +61,8 @@ const Gear = forwardRef<RefType,GearProps>((props: GearProps, ref) => {
 							fill="#000"
 							fillOpacity={0}
 							d={points}
-							className={className}
-							style={{ transformBox: "fill-box" }}
+							className={"pointer-events-auto origin-center"}
+							style={{ transformBox: "fill-box", animation: `spin ${speed}s linear infinite` }}
 							// transform={`translate(${offsetX + " " + offsetY})`}
 							onClick={() => props.select(props.id)}
 							ref={pathRef}
