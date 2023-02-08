@@ -1,78 +1,35 @@
 import React, { ForwardedRef, forwardRef, Ref, RefObject, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ReactSVG } from "react-svg";
-// import init, {make_gear} from "gear-calc";
 import init, { make_gear, test } from "gear-calc";
 import Draggable from "react-draggable";
+import { useAppDispatch, useAppSelector } from "./app/hooks";
+import { setSelected } from "./app/features/gearsSlice";
 
 interface GearProps {
-	teeth: number,
-	diameter: number,
-	id: number,
-	select: (id: number) => void,
-	num: number
+	teethCount: number,
+	pitchDiameter: number,
+	id: number
 }
 
-export interface RefType {
-	setSpeed: (num: number) => void
-}
-
-const Gear = forwardRef<RefType, GearProps>((props: GearProps, ref) => {
-	const [points, setPoints] = useState("");
-	const [speed, setAnimationSpeed] = useState(0);
-
-	const pathRef = useRef<SVGPathElement>(null);
-	if (pathRef.current && props.id % 2 == 1) {
-		pathRef.current.style.animationDirection = "reverse";
-	}
-	useEffect(() => {
-		console.log(props.id);
-		if (speed === Infinity) {
-			setAnimationSpeed(0);
-		}
-		// pathRef.current?.classList.add("animate-[spin_5s_linear_infinite]")
-
-	}, [speed]);
-
-	const setSpeed = (num: number) => {
-		setAnimationSpeed(num);
-	};
-
-	useImperativeHandle(ref, () => ({ setSpeed }))
-
-	// if (ref.current) {
-	// 	console.log(ref.current["offsetWidth" as never]);
-	// }
+const Gear = (props: GearProps) => {
+	const dispatch = useAppDispatch();
+	const {selected} = useAppSelector(state=>state.gears);
 	const pixelToCm = 0.026458;
-	init().then(() => {
-		setPoints(make_gear(props.teeth, props.diameter / pixelToCm));
-	});
 	return (
 		<>
-			<Draggable nodeRef={pathRef as any}>
-				<foreignObject width={(props.diameter + 3 * (props.diameter / props.teeth)) / pixelToCm} height={(props.diameter + 3 * (props.diameter / props.teeth)) / pixelToCm}>
-					<svg
-						xmlns="<http://www.w3.org/2000/svg>"
-						className="overflow-visible w-fit h-fit rounded-full pointer-events-none"
-						width={(props.diameter + 3 * (props.diameter / props.teeth)) / pixelToCm}
-						height={(props.diameter + 3 * (props.diameter / props.teeth)) / pixelToCm}>
-						<path
-							strokeWidth={"1"}
-							stroke="black"
-							fill="#000"
-							fillOpacity={0}
-							d={points}
-							className={"pointer-events-auto origin-center"}
-							style={{ transformBox: "fill-box", animation: `spin ${speed}s linear infinite` }}
-							// transform={`translate(${offsetX + " " + offsetY})`}
-							onClick={() => props.select(props.id)}
-							ref={pathRef}
-						>
-						</path>
-					</svg>
-				</foreignObject>
-			</Draggable>
+			<foreignObject
+				width={100}
+				height={24}
+				style={{translate: `0px ${props.id*24}px`}}
+				className={`${selected===props.id?"bg-gray-600":""}`}
+				onClick={()=>dispatch(setSelected(props.id))}
+			>
+				<div>
+					{props.teethCount + " " + props.pitchDiameter + " " + props.id}
+				</div>
+			</foreignObject>
 		</>
 	);
-});
+};
 
 export default Gear;
