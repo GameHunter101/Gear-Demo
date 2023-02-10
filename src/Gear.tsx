@@ -13,8 +13,8 @@ const Gear = (props: GearParameters) => {
 	const pathRef = useRef<SVGPathElement>(null);
 
 	const pixelToCm = 0.026458;
-	const containerSize = (props.pitchDiameter + 3 * (props.pitchDiameter / props.teethCount)) / pixelToCm;
-	const speed = 60 / props.speedRpm;
+	const containerSize = (props.pitchDiameter + 2 * (props.pitchDiameter / props.teethCount)) / pixelToCm;
+	const speed = props.speedRpm === 0? 0: 60 / props.speedRpm;
 	// const gearIndex = gears.map((e, i) => { if (e.id == props.id) return i }).filter(e => e !== undefined);
 	init().then(() => {
 		setPoints(make_gear(props.teethCount, props.pitchDiameter / pixelToCm));
@@ -25,11 +25,12 @@ const Gear = (props: GearParameters) => {
 				<foreignObject
 					width={containerSize}
 					height={containerSize}
+					className="relative"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 
-						className="overflow-visible w-fit h-fit rounded-full pointer-events-none"
+						className="overflow-visible w-fit h-fit rounded-full pointer-events-none relat"
 						width={containerSize}
 						height={containerSize}
 					>
@@ -45,6 +46,14 @@ const Gear = (props: GearParameters) => {
 							onClick={() => dispatch(setSelected(props.id))}
 						>
 						</path>
+						<text x={containerSize/2} y={containerSize/2} dominantBaseline="middle" textAnchor="middle">
+							<tspan x="50%"  dy="-1rem">
+							Module: {props.pitchDiameter/props.teethCount}
+							</tspan>
+							<tspan x="50%"  dy="1rem">
+							Speed: {props.speedRpm} rpm
+							</tspan>
+						</text>
 					</svg>
 				</foreignObject>
 			</Draggable>
