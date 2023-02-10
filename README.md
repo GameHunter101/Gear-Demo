@@ -11,5 +11,5 @@
 - [x] Export rust function to wasm
 - [x] Make react call wasm function
 - [x] Make gears spin
-- [ ] Link gears
+- [x] Link gears
 - [ ] Add pinions

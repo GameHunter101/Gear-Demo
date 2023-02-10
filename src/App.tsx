@@ -25,7 +25,7 @@ function App() {
 
 	const gearComponents = gears.map((gear, i) => {
 		return (
-			<Gear teethCount={gear.teethCount} pitchDiameter={gear.pitchDiameter} id={gear.id} key={gear.id} speedRpm={gear.speedRpm} />
+			<Gear teethCount={gear.teethCount} pitchDiameter={gear.pitchDiameter} id={gear.id} key={gear.id} speedRpm={gear.speedRpm} reversed={gear.reversed} />
 		)
 	});
 

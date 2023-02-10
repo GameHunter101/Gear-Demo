@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { useAppDispatch, useAppSelector } from './app/hooks';
-import { deleteGear, makeGear, setSpinSpeed } from "./app/features/gearsSlice";
+import { deleteGear, linkGear, makeGear, setSpinSpeed, toggleLinking } from "./app/features/gearsSlice";
 
 function TopBar() {
     const dispatch = useAppDispatch();
-    const { gears, selectedId: selected } = useAppSelector(state => state.gears);
+    const { gears, selectedId } = useAppSelector(state => state.gears);
 
     const [teethCount, setTeethCount] = useState(18);
     const [pitchDiameter, setPitchDiameter] = useState(10);
@@ -12,7 +12,7 @@ function TopBar() {
 
     return (
         <div className="fixed top-0 w-full h-12 bg-[#262626] flex items-center">
-            {selected === undefined ?
+            {selectedId === undefined ?
                 (<form className="mx-auto grid grid-cols-3 gap-2" onSubmit={(e) => {
                     e.preventDefault();
                     dispatch(makeGear({ teethCount, pitchDiameter }));
@@ -31,7 +31,7 @@ function TopBar() {
                     </span>
                 </form>)
                 :
-                (<form className="mx-auto grid grid-cols-3 gap-2" onSubmit={(e) => {
+                (<form className="mx-auto grid grid-cols-4 gap-2" onSubmit={(e) => {
                     e.preventDefault();
                     dispatch(setSpinSpeed(rpm));
                 }}>
@@ -39,17 +39,27 @@ function TopBar() {
                         <label htmlFor="rpm" className="pr-2 text-white">Gear RPM</label>
                         <input type="number" id="rpm" value={rpm} className="w-12 bg-transparent focus:outline-none placeholder:text-gray-300 text-gray-300 border-b-[1px]  border-b-gray-700" onChange={e => setRpm(e.target.valueAsNumber)} />
                     </div>
-                    <span className="mx-2">
+                    <div className="mx-2">
                         <button type="submit" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100">Set RPM</button>
-                    </span>
-                    {/* <span className="mx-2"> */}
-                    <button type="button" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100" onClick={() => {
-                        console.log(selected);
-                        dispatch(deleteGear(selected));
-                    }}>
-                        Delete Gear
-                    </button>
-                    {/* </span> */}
+                    </div>
+
+                    <div>
+                        <button type="button" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100" onClick={() => {
+                            dispatch(deleteGear(selectedId));
+                        }}>
+                            Delete Gear
+                        </button>
+                    </div>
+                    <div className="mx-2">
+                        <button type="button" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100" onClick={() => {
+                            console.log(selectedId);
+                            dispatch(toggleLinking());
+                            dispatch(linkGear(selectedId))
+                            // dispatch(deleteGear(selected));
+                        }}>
+                            Link Gears
+                        </button>
+                    </div>
                 </form>)
             }
         </div>
