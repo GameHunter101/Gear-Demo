@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { useAppDispatch, useAppSelector } from './app/hooks';
-import {deleteGear, makeGear} from "./app/features/gearsSlice";
+import { deleteGear, makeGear, setSpinSpeed } from "./app/features/gearsSlice";
 
 function TopBar() {
     const dispatch = useAppDispatch();
-    const {gears, selected} = useAppSelector(state=>state.gears);
+    const { gears, selectedId: selected } = useAppSelector(state => state.gears);
 
     const [teethCount, setTeethCount] = useState(18);
     const [pitchDiameter, setPitchDiameter] = useState(10);
@@ -33,8 +33,7 @@ function TopBar() {
                 :
                 (<form className="mx-auto grid grid-cols-3 gap-2" onSubmit={(e) => {
                     e.preventDefault();
-                    /* if (gears && selected != undefined && !isNaN(rpm)) {
-                    } */
+                    dispatch(setSpinSpeed(rpm));
                 }}>
                     <div>
                         <label htmlFor="rpm" className="pr-2 text-white">Gear RPM</label>

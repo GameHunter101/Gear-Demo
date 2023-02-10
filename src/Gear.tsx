@@ -6,26 +6,25 @@ import { GearParameters, setSelected } from "./app/features/gearsSlice";
 
 const Gear = (props: GearParameters) => {
 	const dispatch = useAppDispatch();
-	const { selected } = useAppSelector(state => state.gears);
+	const { selectedId: selected, gears } = useAppSelector(state => state.gears);
 
 	const [points, setPoints] = useState("");
 
-	const gearRef = useRef<SVGPathElement>(null);
-	const wrapperRef = useRef<SVGForeignObjectElement>(null)
+	const pathRef = useRef<SVGPathElement>(null);
 
 	const pixelToCm = 0.026458;
+	const containerSize = (props.pitchDiameter + 3 * (props.pitchDiameter / props.teethCount)) / pixelToCm;
+	const speed = 60 / props.speedRpm;
+	// const gearIndex = gears.map((e, i) => { if (e.id == props.id) return i }).filter(e => e !== undefined);
 	init().then(() => {
 		setPoints(make_gear(props.teethCount, props.pitchDiameter / pixelToCm));
-	})
-	const containerSize = (props.pitchDiameter + 3 * (props.pitchDiameter / props.teethCount)) / pixelToCm;
+	});
 	return (
 		<>
-			<Draggable nodeRef={wrapperRef as any}>
+			<Draggable nodeRef={pathRef as any}>
 				<foreignObject
 					width={containerSize}
 					height={containerSize}
-					onClick={() => dispatch(setSelected(props.id))}
-					ref={wrapperRef}
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -38,16 +37,15 @@ const Gear = (props: GearParameters) => {
 							stroke={"black"}
 							strokeWidth={1}
 							fill={"#000"}
+							className={"origin-center pointer-events-auto animate-[spin_0s_linear_infinite]"}
+							style={{ transformBox: "fill-box", animation: `spin ${speed}s linear infinite` }}
 							fillOpacity={selected === props.id ? "0.5" : "0"}
 							d={points}
+							ref={pathRef}
+							onClick={() => dispatch(setSelected(props.id))}
 						>
 						</path>
 					</svg>
-
-					<div
-					>
-						{props.teethCount + " " + props.pitchDiameter + " " + props.id}
-					</div>
 				</foreignObject>
 			</Draggable>
 		</>

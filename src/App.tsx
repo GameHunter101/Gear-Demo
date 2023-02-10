@@ -10,7 +10,7 @@ function App() {
 	const dispatch = useAppDispatch();
 
 	const handleClick = (e: MouseEvent) => {
-		if ((e.target as HTMLDivElement).tagName === "svg"){
+		if ((e.target as HTMLDivElement).tagName === "svg") {
 			dispatch(setSelected(undefined));
 		}
 	}
@@ -23,15 +23,15 @@ function App() {
 		}
 	})
 
-	const gearComponents = gears.map((gear, i) => (
-		<Gear teethCount={gear.teethCount} pitchDiameter={gear.pitchDiameter} id={gear.id} key={gear.id} speedRpm={0} />
-	));
+	const gearComponents = gears.map((gear, i) => {
+		return (
+			<Gear teethCount={gear.teethCount} pitchDiameter={gear.pitchDiameter} id={gear.id} key={gear.id} speedRpm={gear.speedRpm} />
+		)
+	});
 
 
 	return (
-		<div
-			className="App relative"
-		>
+		<div className="App relative">
 			<TopBar />
 			<svg
 				className="pt-12"

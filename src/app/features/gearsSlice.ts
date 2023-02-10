@@ -10,7 +10,7 @@ export interface GearParameters {
 
 interface GearsState {
 	gears: GearParameters[],
-	selected?: number,
+	selectedId?: number,
 	nextId: number,
 };
 
@@ -29,30 +29,24 @@ export const gearsSlice = createSlice({
 	initialState,
 	reducers: {
 		makeGear: (state, action: PayloadAction<{ teethCount: number, pitchDiameter: number }>) => {
-			/* let newId = 0;
-			if (state.gears.length > 0) {
-				newId = state.gears[state.gears.length - 1].id + 1;
-			} */
 			state.gears.push({ ...action.payload, speedRpm: 0, id: state.nextId });
 			state.nextId++;
 			console.log("making gear");
 		},
 		deleteGear: (state, action: PayloadAction<number>) => {
 			state.gears = state.gears.filter(e => e.id != action.payload);
-			/* const gearIndex = state.gears.map((e, i) => {
-				if (e.id == action.payload) {
-					return i
-				}
-			}).filter(e => e !== undefined)[0]!;
-			state.gears.splice(gearIndex, 1);
-			state.gears.map(e => console.log(e.id)); */
 		},
 		setSelected: (state, action: PayloadAction<number | undefined>) => {
-			state.selected = action.payload;
+			state.selectedId = action.payload;
+		},
+		setSpinSpeed: (state, action: PayloadAction<number>) =>{
+			const allIds = state.gears.map(e=>e.id);
+			const selectedIndex = allIds.indexOf(state.selectedId!);
+			state.gears[selectedIndex].speedRpm = action.payload;
 		}
 	}
 });
 
-export const { makeGear, deleteGear, setSelected } = gearsSlice.actions;
-export const selectedGear = (state: RootState) => state.gears.selected;
+export const { makeGear, deleteGear, setSelected, setSpinSpeed } = gearsSlice.actions;
+export const selectedGear = (state: RootState) => state.gears.selectedId;
 export default gearsSlice.reducer
