@@ -6,7 +6,8 @@ export interface GearParameters {
 	pitchDiameter: number,
 	speedRpm: number,
 	id: number,
-	reversed: boolean
+	reversed: boolean,
+	gearRefs?: React.MutableRefObject<(SVGGElement | null)[]>
 }
 
 interface GearsState {
@@ -36,7 +37,7 @@ export const gearsSlice = createSlice({
 	initialState,
 	reducers: {
 		makeGear: (state, action: PayloadAction<{ teethCount: number, pitchDiameter: number }>) => {
-			state.gears.push({ ...action.payload, speedRpm: 0, id: state.nextId, reversed: state.nextId%2==1 });
+			state.gears.push({ ...action.payload, speedRpm: 0, id: state.nextId, reversed: state.nextId % 2 == 1 });
 			state.nextId++;
 		},
 		deleteGear: (state, action: PayloadAction<number>) => {
@@ -44,15 +45,12 @@ export const gearsSlice = createSlice({
 		},
 		setSelected: (state, action: PayloadAction<number | undefined>) => {
 			state.selectedId = action.payload;
-			if (state.isLinking) {
-				if (action.payload !== undefined) {
-					const allIds = state.gears.map(e => e.id);
-					const selectedIndex = allIds.indexOf(action.payload);
-					state.selectedModule = state.gears[selectedIndex].pitchDiameter / state.gears[selectedIndex].teethCount;
-					// state.linkedIndices = [selectedIndex];
-				} else {
-					state.selectedModule = undefined;
-				}
+			if (action.payload !== undefined) {
+				const allIds = state.gears.map(e => e.id);
+				const selectedIndex = allIds.indexOf(action.payload);
+				state.selectedModule = state.gears[selectedIndex].pitchDiameter / state.gears[selectedIndex].teethCount;
+			} else {
+				state.selectedModule = undefined;
 			}
 		},
 		setSpinSpeed: (state, action: PayloadAction<number>) => {
@@ -74,10 +72,10 @@ export const gearsSlice = createSlice({
 			if (state.linkedIndices.length === 2) {
 				const parentGear = state.gears[state.linkedIndices[0]];
 				const childGear = state.gears[state.linkedIndices[1]];
-				childGear.speedRpm = (parentGear.teethCount/childGear.teethCount) * parentGear.speedRpm;
+				childGear.speedRpm = (parentGear.teethCount / childGear.teethCount) * parentGear.speedRpm;
 				childGear.reversed = !parentGear.reversed;
+				parentGear.reversed = !childGear.reversed;
 			}
-			console.log(...state.linkedIndices);
 		}
 	}
 });

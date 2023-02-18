@@ -6,8 +6,8 @@ function TopBar() {
     const dispatch = useAppDispatch();
     const { gears, selectedId } = useAppSelector(state => state.gears);
 
-    const [teethCount, setTeethCount] = useState(18);
-    const [pitchDiameter, setPitchDiameter] = useState(10);
+    const [teethCount, setTeethCount] = useState(15);
+    const [pitchDiameter, setPitchDiameter] = useState(6);
     const [rpm, setRpm] = useState(30);
 
     return (
@@ -52,9 +52,9 @@ function TopBar() {
                     </div>
                     <div className="mx-2">
                         <button type="button" className="bg-[#202020] text-white px-4 rounded-full py-1 shadow-sm shadow-[#0000005F] hover:bg-[#A0A0A0] hover:text-[#202020] transition-all duration-100" onClick={() => {
-                            console.log(selectedId);
+                            // console.log(selectedId);
                             dispatch(toggleLinking());
-                            dispatch(linkGear(selectedId))
+                            dispatch(linkGear(selectedId));
                             // dispatch(deleteGear(selected));
                         }}>
                             Link Gears
