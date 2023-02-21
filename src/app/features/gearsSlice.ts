@@ -7,7 +7,8 @@ export interface GearParameters {
 	speedRpm: number,
 	id: number,
 	reversed: boolean,
-	gearRefs?: React.MutableRefObject<(SVGGElement | null)[]>
+	gearRefs?: React.MutableRefObject<(SVGGElement | null)[]>,
+	rotationOffset: number
 }
 
 interface GearsState {
@@ -25,7 +26,8 @@ const initialState: GearsState = {
 		pitchDiameter: 8,
 		speedRpm: 30,
 		id: 0,
-		reversed: false
+		reversed: false,
+		rotationOffset: 0
 	}],
 	nextId: 1,
 	isLinking: false,
@@ -37,7 +39,7 @@ export const gearsSlice = createSlice({
 	initialState,
 	reducers: {
 		makeGear: (state, action: PayloadAction<{ teethCount: number, pitchDiameter: number }>) => {
-			state.gears.push({ ...action.payload, speedRpm: 0, id: state.nextId, reversed: state.nextId % 2 == 1 });
+			state.gears.push({ ...action.payload, speedRpm: 0, id: state.nextId, reversed: state.nextId % 2 == 1, rotationOffset: 0 });
 			state.nextId++;
 		},
 		deleteGear: (state, action: PayloadAction<number>) => {
@@ -76,10 +78,13 @@ export const gearsSlice = createSlice({
 				childGear.reversed = !parentGear.reversed;
 				parentGear.reversed = !childGear.reversed;
 			}
+		},
+		setChildOffset: (state, action: PayloadAction<number>) => {
+			state.gears[state.linkedIndices[1]].rotationOffset = action.payload;
 		}
 	}
 });
 
-export const { makeGear, deleteGear, setSelected, setSpinSpeed, toggleLinking, linkGear } = gearsSlice.actions;
+export const { makeGear, deleteGear, setSelected, setSpinSpeed, toggleLinking, linkGear, setChildOffset } = gearsSlice.actions;
 export const selectedGear = (state: RootState) => state.gears.selectedId;
 export default gearsSlice.reducer

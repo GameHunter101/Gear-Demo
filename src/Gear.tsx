@@ -1,8 +1,8 @@
-import React, { ForwardedRef, forwardRef, Ref, RefObject, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { ForwardedRef, forwardRef, Ref, RefObject, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import init, { make_gear, test } from "gear-calc";
 import Draggable from "react-draggable";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
-import { GearParameters, linkGear, setSelected, setSpinSpeed, toggleLinking } from "./app/features/gearsSlice";
+import { GearParameters, linkGear, setChildOffset, setSelected, setSpinSpeed, toggleLinking } from "./app/features/gearsSlice";
 
 const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameters, ref) => {
 	const dispatch = useAppDispatch();
@@ -10,14 +10,12 @@ const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameter
 
 	const [points, setPoints] = useState("");
 	const [linkedPosition, setLinkedPosition] = useState<{ x: number, y: number } | null>(null);
-	const [gearRot, setGearRot] = useState((props.reversed ? 180 / props.teethCount : 0));
 
 
-	// const pathRef = useRef<SVGPathElement>(null);
+	const pathRef = useRef<SVGPathElement>(null);
 	const wrapperRef = useRef<SVGSVGElement>(null);
 
 	const pixelToCm = 0.026458;
-	const speed = props.speedRpm === 0 ? 0 : 60 / props.speedRpm;
 	const module = props.pitchDiameter / props.teethCount;
 	const containerSize = getWidth(props.pitchDiameter, module);
 
@@ -46,9 +44,26 @@ const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameter
 		return (pitchDiameter + 2 * module) / pixelToCm
 	}
 
-	useEffect(()=>console.log(gearRot),[gearRot]);
+	// Set rotation every frame
+	let rotation = props.rotationOffset;
+	useEffect(() => {
+		let time = performance.now();
+		let reqId = -1;
+		const cb = (newTime: number) => {
+			const deltaTime = newTime - time;
+			const deltaRotation = (props.speedRpm / 60) * deltaTime / 1000;
+			rotation += props.reversed ? -deltaRotation : deltaRotation;
+			pathRef.current?.setAttribute("style", "transform: rotate(" + rotation + "turn)");
+			time = newTime;
+			reqId = requestAnimationFrame(cb);
+		}
+		reqId = requestAnimationFrame(cb);
+		return () => {
+			cancelAnimationFrame(reqId);
+		}
+	}, [pathRef.current, props.speedRpm]);
 
-
+	// Calculate new position and speed when linking gear
 	useEffect(() => {
 		if (linkedIndices[1] === props.id) {
 
@@ -72,10 +87,15 @@ const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameter
 				const yPos = yPosAtX(xPos, parentCenter.x, parentCenter.y, childCenter.x, childCenter.y);
 
 				const newChildPosition = { x: xPos - childWidth / 2, y: yPos - childWidth / 2 };
-				// setGearRot(e => {
-				// 	return e +
-				// 		Math.atan((parentCenter.y - yPos) / (xPos - parentCenter.x)) * 180 / Math.PI
-				// });
+
+				let offset = 0;
+				if (Math.sign(xPos - parentCenter.x) == -1) {
+					offset += Math.PI
+				}
+				const angle = Math.atan((parentCenter.y - yPos) / (xPos - parentCenter.x)) + offset;
+				const parentGearRotation = parseFloat((props.gearRefs?.current[linkedIndices[0]]?.childNodes[0]! as SVGPathElement).getAttribute("style")?.split("(")[1].split("turn")[0]!);
+				const angleOffset = angle * (parentGearParameters.pitchDiameter / childGearParameters.pitchDiameter)+parentGearRotation;
+				dispatch(setChildOffset(angleOffset/(2*Math.PI)));
 				setLinkedPosition(newChildPosition);
 			} else {
 				setLinkedPosition(null);
@@ -117,7 +137,7 @@ const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameter
 							style={{
 								transformBox: "fill-box",
 								transformOrigin: "center",
-								rotate: gearRot + "deg"
+								// rotate: gearRot + "deg"
 							}}
 							ref={ref}
 						>
@@ -127,8 +147,8 @@ const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameter
 								strokeWidth={1}
 								fill={`${isLinking ? `${selectedId === props.id ? "black" : "green"}` : "black"}`
 								}
-								className={"origin-center pointer-events-auto animate-[spin_0s_linear_infinite]"}
-								style={{ transformBox: "fill-box", animation: `${speed}s linear 0s infinite ${props.reversed ? "reverse" : "normal"} none running spin` }}
+								className={"origin-center pointer-events-auto"}
+								style={{ transformBox: "fill-box", /* animation: `${speed}s linear 0s infinite ${props.reversed ? "reverse" : "normal"} none running spin` */ }}
 								fillOpacity={(selectedId === props.id || (module === selectedModule && isLinking)) ? "0.5" : "0"}
 								d={points}
 								onClick={() => {
@@ -139,13 +159,14 @@ const Gear = React.forwardRef<SVGGElement, GearParameters>((props: GearParameter
 										// setParentTransform(props.gearRefs?.current[linkedIndices[0]]?.getAttribute("transform") || null);
 									}
 								}}
+								ref={pathRef}
 							>
 							</path>
 							<g
 								style={{
 									transformBox: "fill-box",
 									transformOrigin: "center",
-									rotate: -gearRot + "deg"
+									// rotate: -gearRot + "deg"
 								}}
 							>
 								<text y={containerSize / 2} dominantBaseline="middle" textAnchor="middle">

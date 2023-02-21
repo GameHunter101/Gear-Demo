@@ -15,6 +15,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-draggable": "^4.4.5",
+    "react-fps": "^1.0.6",
     "react-redux": "^8.0.5",
     "react-svg": "^15.1.21",
     "vite-plugin-wasm-pack": "^0.1.12"
